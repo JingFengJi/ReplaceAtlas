@@ -4,14 +4,23 @@ using UnityEngine;
 using UnityEditor;
 using System.IO;
 using UnityEditor.IMGUI.Controls;
+using UnityEditor.TreeViewExamples;
 
-public class ReplaceAtalas : EditorWindow 
+class ReplaceAtalas : EditorWindow 
 {
 
 	private static ReplaceAtalas window = null;
 	private static List<string> prefabPathList = new List<string> ();
 	private static string assetPath;
 
+    TreeViewState m_TreeViewState;
+    MultiColumnHeaderState m_MultiColumnHeaderState;
+    ReplaceUISpriteTreeView m_TreeView;
+    public ReplaceUISpriteTreeView treeView
+    {
+        get { return m_TreeView; }
+    }
+    
 	Rect SearchFieldRect
 	{
 		get
@@ -27,8 +36,14 @@ public class ReplaceAtalas : EditorWindow
 
 	Rect replaceAtalsRect
 	{
-		get{return new Rect(prefabListRect.xMax + interval,interval,window.position.width - SearchFieldRect.width - 3 * interval,window.position.height - 2 * interval);}
+		get{return new Rect(prefabListRect.xMax + interval,interval,window.position.width - SearchFieldRect.width - 3 * interval,120);}
 	}
+    Rect replaceUISpriteTreeViewRect
+    {
+        get { return new Rect(replaceAtalsRect.x, replaceAtalsRect.yMax + interval, replaceAtalsRect.width, window.position.height - replaceAtalsRect.height - 3 * interval); }
+    }
+
+	private List<ReplaceUISpriteTreeElement> replaceSpriteTreeElementList = new List<ReplaceUISpriteTreeElement>();
 
 	private Vector2 scrollWidgetPos;
 	private float interval = 20f;
@@ -93,7 +108,13 @@ public class ReplaceAtalas : EditorWindow
 		DrawSearchField();
 		DrawPrefabList();
 		DrawReplaceAtalasTool();
+        DoTreeView(replaceUISpriteTreeViewRect);
 	}
+
+    void DoTreeView(Rect rect)
+    {
+        m_TreeView.OnGUI(rect);
+    }
 
 	private void InitIfNeeded()
 	{
@@ -101,7 +122,26 @@ public class ReplaceAtalas : EditorWindow
 		{
 			if (null == searchField)
             	searchField = new SearchField ();
-		}
+            if (m_TreeViewState == null)
+                m_TreeViewState = new TreeViewState();
+
+            bool firstInit = m_MultiColumnHeaderState == null;
+
+            var headerState = ReplaceUISpriteTreeView.CreateDefaultMultiColumnHeaderState(replaceUISpriteTreeViewRect.width);
+
+            if (MultiColumnHeaderState.CanOverwriteSerializedFields(m_MultiColumnHeaderState, headerState))
+                MultiColumnHeaderState.OverwriteSerializedFields(m_MultiColumnHeaderState, headerState);
+            m_MultiColumnHeaderState = headerState;
+
+            var multiColumnHeader = new MultiColumnHeader(headerState);
+            if (firstInit)
+                multiColumnHeader.ResizeToFit();
+
+            TreeModel<ReplaceUISpriteTreeElement> treeModel = new TreeModel<ReplaceUISpriteTreeElement>(GetData());
+
+            m_TreeView = new ReplaceUISpriteTreeView(m_TreeViewState, multiColumnHeader, treeModel);
+
+        }
         initialized = true;
 	}
 
@@ -127,6 +167,8 @@ public class ReplaceAtalas : EditorWindow
 				{
 					curReplacePrefabPath = prefabPathList[i];
 					curPrefabAtlas = GetPrefabAllAtlas(curReplacePrefabPath);
+                    m_TreeView.treeModel.SetData(GetData());
+                    m_TreeView.Reload();
 				}
 			}
 		}
@@ -174,7 +216,7 @@ public class ReplaceAtalas : EditorWindow
 	private void DrawReplaceAtalasTool()
 	{
 		GUI.backgroundColor = Color.white;
-		
+        GUI.Box(replaceAtalsRect, "");
 		GUILayout.BeginArea(replaceAtalsRect);
 		EditorGUILayout.LabelField(curReplacePrefabPath);
 
@@ -239,16 +281,24 @@ public class ReplaceAtalas : EditorWindow
 			}
 			else
 			{
+				bool ReplaceSucc = false;
 				if(targetAtlas == null)
 				{
 					if(EditorUtility.DisplayDialog("提示", "原图集将被清空，确定替换吗？", "确定","取消"))
 					{
 						ReplacePrefabAtalas(curReplacePrefabPath);
+						ReplaceSucc = true;
 					}
 				}
 				else
 				{
 					ReplacePrefabAtalas(curReplacePrefabPath);
+					ReplaceSucc = true;
+				}
+				if(ReplaceSucc)
+				{
+                    m_TreeView.treeModel.SetData(GetData());
+                    m_TreeView.Reload();
 				}
 			}
 		}
@@ -257,6 +307,53 @@ public class ReplaceAtalas : EditorWindow
 		//撤销按钮
 
 		GUILayout.EndArea();
+	}
+
+    IList<ReplaceUISpriteTreeElement> GetData()
+    {
+        //List<ReplaceUISpriteTreeElement> data = new List<ReplaceUISpriteTreeElement>();
+        replaceSpriteTreeElementList.Clear();
+        ReplaceUISpriteTreeElement root = new ReplaceUISpriteTreeElement(null,"","Root", -1, 0);
+        replaceSpriteTreeElementList.Add(root);
+		if(!string.IsNullOrEmpty(curReplacePrefabPath))
+		{
+            GameObject gameObj = AssetDatabase.LoadAssetAtPath<GameObject>(curReplacePrefabPath);
+			if(gameObj != null)
+			{
+				UISprite[] sprites = gameObj.GetComponentsInChildren<UISprite>(true);
+				if(sprites != null && sprites.Length > 0)
+				{
+                    for (int i = 0; i < sprites.Length; i++)
+                    {
+                        ReplaceUISpriteTreeElement element1 = new ReplaceUISpriteTreeElement(sprites[i].gameObject,GetPath(gameObj,sprites[i].gameObject),sprites[i].gameObject.name, 0, i + 1);
+                        replaceSpriteTreeElementList.Add(element1);
+                    }
+				}
+			}
+		}
+        return replaceSpriteTreeElementList;
+    }
+
+	private string GetPath(GameObject root,GameObject child)
+	{
+		if(root == null || child == null) return "";
+		List<string> parentList = new List<string>();
+		parentList.Add(child.name);
+		while(child.transform.parent != null && child.transform.parent != root)
+		{
+			child = child.transform.parent.gameObject;
+			parentList.Add(child.name);
+		}
+		string path = "";
+		for (int i = parentList.Count - 1; i >= 0; i--)
+		{
+			path += parentList[i];
+			if(i != 0)
+			{
+				path += "/";
+			}
+		}
+		return path;
 	}
 
 	private void ReplacePrefabAtalas(string path)
@@ -303,7 +400,9 @@ public class ReplaceAtalas : EditorWindow
 			for (int i = 0; i < num; i++)
 			{
 				UISprite s = sprites[i];
-				if(s != null && s.atlas == atlas)
+				//因为replaceSpriteTreeElementList的第一个是root
+				if(s != null && s.atlas == atlas && i < replaceSpriteTreeElementList.Count - 1 
+					&& replaceSpriteTreeElementList[i+1] != null && replaceSpriteTreeElementList[i+1].Replace)
 				{
 					s.atlas = targetAtlas;
 					EditorUtility.SetDirty(s);
