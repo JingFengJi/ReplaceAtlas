@@ -709,27 +709,27 @@ static public class NGUIEditorTools
 	/// Draw a sprite preview.
 	/// </summary>
 
-	static public void DrawSprite (Texture2D tex, Rect rect, UISpriteData sprite, Color color)
+	static public void DrawSprite (Texture2D tex, Rect rect, UISpriteData sprite, Color color,bool needSizeLabel = true)
 	{
-		DrawSprite(tex, rect, sprite, color, null);
+		DrawSprite(tex, rect, sprite, color, null,needSizeLabel);
 	}
 
 	/// <summary>
 	/// Draw a sprite preview.
 	/// </summary>
 
-	static public void DrawSprite (Texture2D tex, Rect drawRect, UISpriteData sprite, Color color, Material mat)
+	static public void DrawSprite (Texture2D tex, Rect drawRect, UISpriteData sprite, Color color, Material mat,bool needSizeLabel = true)
 	{
 		if (!tex || sprite == null) return;
 		DrawSprite(tex, drawRect, color, mat, sprite.x, sprite.y, sprite.width, sprite.height,
-			sprite.borderLeft, sprite.borderBottom, sprite.borderRight, sprite.borderTop);
+			sprite.borderLeft, sprite.borderBottom, sprite.borderRight, sprite.borderTop,needSizeLabel);
 	}
 
 	/// <summary>
 	/// Draw a sprite preview.
 	/// </summary>
 
-	static public void DrawSprite (Texture2D tex, Rect drawRect, Color color, Rect textureRect, Vector4 border)
+	static public void DrawSprite (Texture2D tex, Rect drawRect, Color color, Rect textureRect, Vector4 border,bool needSizeLabel = true)
 	{
 		NGUIEditorTools.DrawSprite(tex, drawRect, color, null,
 			Mathf.RoundToInt(textureRect.x),
@@ -739,7 +739,7 @@ static public class NGUIEditorTools
 			Mathf.RoundToInt(border.x),
 			Mathf.RoundToInt(border.y),
 			Mathf.RoundToInt(border.z),
-			Mathf.RoundToInt(border.w));
+			Mathf.RoundToInt(border.w),needSizeLabel);
 	}
 
 	/// <summary>
@@ -747,7 +747,7 @@ static public class NGUIEditorTools
 	/// </summary>
 
 	static public void DrawSprite (Texture2D tex, Rect drawRect, Color color, Material mat,
-		int x, int y, int width, int height, int borderLeft, int borderBottom, int borderRight, int borderTop)
+		int x, int y, int width, int height, int borderLeft, int borderBottom, int borderRight, int borderTop,bool needSizeLabel = true)
 	{
 		if (!tex) return;
 
@@ -837,8 +837,11 @@ static public class NGUIEditorTools
 			Handles.DrawLine(new Vector3(outerRect.xMin, outerRect.yMax), new Vector3(outerRect.xMax, outerRect.yMax));
 
 			// Sprite size label
-			string text = string.Format("Sprite Size: {0}x{1}", Mathf.RoundToInt(width), Mathf.RoundToInt(height));
-			EditorGUI.DropShadowLabel(GUILayoutUtility.GetRect(Screen.width, 18f), text);
+			if(needSizeLabel)
+			{
+				string text = string.Format("Sprite Size: {0}x{1}", Mathf.RoundToInt(width), Mathf.RoundToInt(height));
+                EditorGUI.DropShadowLabel(GUILayoutUtility.GetRect(Screen.width, 18f), text);
+			}
 		}
 	}
 

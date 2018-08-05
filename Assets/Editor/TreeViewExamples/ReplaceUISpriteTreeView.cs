@@ -13,9 +13,11 @@ internal class ReplaceUISpriteTreeView : TreeViewWithTreeModel<ReplaceUISpriteTr
     {
 		GameObjectName,
 		UIAtlas,
-		UISprite,
+		UISpriteName,
+        SpriteTexture,
         ChildPath,
 		Replace,
+        TargetSprite,
     }
 
     public static void TreeToList(TreeViewItem root, IList<TreeViewItem> result)
@@ -111,10 +113,13 @@ internal class ReplaceUISpriteTreeView : TreeViewWithTreeModel<ReplaceUISpriteTr
 				EditorGUI.LabelField(cellRect,item.data.GameObjectName,style);
                 break;
             case MyColumns.UIAtlas:
-				EditorGUI.LabelField(cellRect,item.data.Atlas,style);
+				EditorGUI.LabelField(cellRect,item.data.AtlasStr,style);
                 break;
-            case MyColumns.UISprite:
-				EditorGUI.LabelField(cellRect,item.data.Sprite,style);
+            case MyColumns.UISpriteName:
+				EditorGUI.LabelField(cellRect,item.data.SpriteName,style);
+                break;
+            case MyColumns.SpriteTexture:
+                NGUIEditorTools.DrawSprite(item.data.SpriteTexture, cellRect, item.data.SpriteData, Color.white,false);
                 break;
             case MyColumns.ChildPath:
                 EditorGUI.LabelField(cellRect,item.data.Path,style);
@@ -135,12 +140,18 @@ internal class ReplaceUISpriteTreeView : TreeViewWithTreeModel<ReplaceUISpriteTr
                     EditorGUI.LabelField(labelRect,"不替换",style);
                 }
                 break;
+            case MyColumns.TargetSprite:
+                if(item.data.TargetSpriteData != null && item.data.TargetSpriteTexture != null)
+                {
+                    NGUIEditorTools.DrawSprite(item.data.TargetSpriteTexture,cellRect,item.data.TargetSpriteData,Color.white,false);
+                }
+                break;
         }
     }
 
     public static MultiColumnHeaderState CreateDefaultMultiColumnHeaderState(float treeViewWidth)
     {
-        int headNum = 5;
+        int headNum = 7;
         float _width = treeViewWidth / headNum;
         var columns = new[]
         {
@@ -179,6 +190,17 @@ internal class ReplaceUISpriteTreeView : TreeViewWithTreeModel<ReplaceUISpriteTr
                 },
                 new MultiColumnHeaderState.Column
                 {
+                    headerContent = new GUIContent("Sprite Texture",""),
+                    headerTextAlignment = TextAlignment.Center,
+                    sortedAscending = false,
+                    sortingArrowAlignment = TextAlignment.Center,
+                    width = _width,
+                    minWidth = 60,
+                    autoResize = false,
+                    allowToggleVisibility = false
+                },
+                new MultiColumnHeaderState.Column
+                {
                     headerContent = new GUIContent("Child Path",""),
                     headerTextAlignment = TextAlignment.Center,
                     sortedAscending = false,
@@ -191,6 +213,17 @@ internal class ReplaceUISpriteTreeView : TreeViewWithTreeModel<ReplaceUISpriteTr
                 new MultiColumnHeaderState.Column
                 {
                     headerContent = new GUIContent("是否替换",""),
+                    headerTextAlignment = TextAlignment.Center,
+                    sortedAscending = false,
+                    sortingArrowAlignment = TextAlignment.Center,
+                    width = _width,
+                    minWidth = 60,
+                    autoResize = false,
+                    allowToggleVisibility = false
+                },
+                new MultiColumnHeaderState.Column
+                {
+                    headerContent = new GUIContent("替换后的Sprite",""),
                     headerTextAlignment = TextAlignment.Center,
                     sortedAscending = false,
                     sortingArrowAlignment = TextAlignment.Center,

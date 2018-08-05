@@ -205,6 +205,7 @@ class ReplaceAtalas : EditorWindow
 		else if(isSelectTargetAtlas)
 		{
 			targetAtlas = obj as UIAtlas;
+            OnTargetAtlasChanged(targetAtlas);
 		}
 		isSelectCurAtlas = false;
 		isSelectTargetAtlas = false;
@@ -266,6 +267,7 @@ class ReplaceAtalas : EditorWindow
 			UIAtlas tmpCurAtlas = curAtlas;
 			curAtlas = targetAtlas;
 			targetAtlas = tmpCurAtlas;
+			OnTargetAtlasChanged(targetAtlas);
 		}
 
 		//替换按钮
@@ -307,6 +309,21 @@ class ReplaceAtalas : EditorWindow
 		//撤销按钮
 
 		GUILayout.EndArea();
+	}
+
+	private void OnTargetAtlasChanged(UIAtlas targetAtlas)
+	{
+		if(replaceSpriteTreeElementList != null && replaceSpriteTreeElementList.Count > 0)
+		{
+			for (int i = 0; i < replaceSpriteTreeElementList.Count; i++)
+			{
+				if(replaceSpriteTreeElementList[i] != null)
+				{
+					replaceSpriteTreeElementList[i].SetReplaceTargetAtlas(targetAtlas);
+				}
+			}
+            m_TreeView.Reload();
+		}
 	}
 
     IList<ReplaceUISpriteTreeElement> GetData()
